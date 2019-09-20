@@ -19,8 +19,7 @@
 import math
 import matplotlib
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-
+from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
 
 G=6.674e-11         #m^3kg^-1s^-2
 
@@ -29,33 +28,36 @@ class Particle:
     Particle
     =======
     Es una clase que permite analizar el comportamiento de 2 particulas
-
+    
     METODOS:
-
-      *setdt: p boligatoria, v obligatoria, m obligatoria, dt opcional
+    
+      *setdt: p obligatoria, v obligatoria, m obligatoria, dt opcional
           Asigna la delta t
       
       *computeR: dt obligatoria
          Calcula la distancia de las particulas
-
+         
       *computeU: p1 obligatoria
          Calcula el verctor direccion
-
+         
       *integrate: B boligatoria
          Se encargaba de integrar la varaible sobre algo
-
+         
       *getPosition:
          Regresa la posicion de la particula
     """
+    
     def __init__(self, p, v, m, dt=1):
-        self.p = p
-        self.v = v
-        self.m = m
-        self.dt = dt
-
+        self.p = p #position
+        self.v = v #velocity
+        self.m = m #mass
+        self.dt = dt #dt
+        self.trajectory = [p]
+        self.time = [0.0]
+        
     def setdt(self,dt):
         self.dt = dt
-    
+
     def computeR(self,p1):
         r = math.sqrt( (p1[0]-self.p[0])**2 + (p1[1]-self.p[1])**2 + (p1[2]-self.p[2])**2)
         return r
@@ -81,7 +83,7 @@ class Particle:
         self.v[1] += Vy
         self.v[2] += Vz
         
-        self.p = [self.p[0]+ (self.v[0]+Vx) *dt,self.p[1]+ (self.v[1]+Vy)*dt,self.p[2]+ (self.v[2]+Vz)*dt]
+        self.p = [self.p[0]+ (self.v[0]) *dt,self.p[1]+ (self.v[1])*dt,self.p[2]+ (self.v[2])*dt]
 
     def getPosition(self):
         return self.p
@@ -91,45 +93,94 @@ class Particle:
 
     def getKineticEnergy(self):
         k= (1/2)*self.m*(math.sqrt( self.v[0]^2 +self.v[1]^2+self.v[2]^2))
-        return k
-
-    #def setdt(self):
-        
-#def plotting(fig,ax,time,y1,title,filename,caption):
-#    ax.plot(time,y1,label=caption)
-#    ax.set(x)
-
+        return k    
     
-p0=[5e-2, 1e-2, 0.0]  #m
-v0=[0.0, 0.0, 0.0]  #m/s
-m=1e6               #kg
+    def computeV(self,B):
+        r = self.computeR(B.p)
+        u = self.computeU(B.p)
 
-p1=[0.0, 0.0, 0.0]  #m
-v1=[1.0, 0.0, 0.0]  #m/s
-m1=1.0               #kg
+        Vx=(G*B.m*self.dt/(r**3))*u[0]
+        Vy=(G*B.m*self.dt/(r**3))*u[1]
+        Vz=(G*B.m*self.dt/(r**3))*u[2]
 
+        return [Vx,Vy,Vz]
+    
+    def updateV(self,v):
+        self.v[0] += v[0]
+        self.v[1] += v[1]
+        self.v[2] += v[2]
+        
+    def updatePosition(self,time):
+        self.p = [self.p[0]+ (self.v[0]) *dt,self.p[1]+ (self.v[1])*dt,self.p[2]+ (self.v[2])*dt]
+        self.trajectory.append(self.p)
+        self.time.append(time)
+        
+    def getTrajectory(self):
+        return self.time,self.trajectory
+    
+class Potential:
+    
+    def __init__(self, system, dt):
+        self.system = system #set of Particles
+        self.dt = dt #dt
+    
+    def integrate(self,time):
+        
+        for particle in self.system:
+            for other in self.system:
+                if other!=particle:
+                    velocity = particle.computeV(other)
+                    particle.updateV(velocity)
+                    
+        for particle in self.system:
+            particle.updatePosition(time)
+        
+        return self.system
+                    
+
+p0=[5e-2, 1e-3, 0.0]  #km
+v0=[0.0, 0.0, 0.0]  #km/s
+m=1e7               #kg
+
+p1=[0.0, 0.0, 0.0]  #km
+v1=[1.0, 0.0, 0.0]  #km/s
+m1=1e7               #kg
 
 dt=0.001              #sec
 
 A = Particle(p0,v0,m)
 B = Particle(p1,v1,m1)
 
-B.setdt(dt)
+particles = [A,B]
 
-x=[] #tiempo
-y = [] #posicion
-v = [] #velocidad
-a = [] #aceleracion
+twoBody = Potential(particles,dt)
 
-x.append(0.0)
+x = []
+y = []
+
+for t in range(1,100):
+    system = twoBody.integrate(float(t)*dt)
+    #twoBody.integrate()
+    #x.append(float(t)*dt)
+    
+    
+#B.setdt(dt)
+
+#x=[]
+#y=[]
+#v=[]
+#a=[]
+
+#x.append(0.0)
 #y.append(B.getPosition()[0])
-y.append(B.getPosition())
-v.append(B.getVelocity()[0])
-a.append(0.0)
-v1 = B.getVelocity()[0]
+#y.append(B.getPosition())
+#v.append(B.getVelocity()[0])
+
+#print(B.getVelocity()[0])
+
+#a.append(0.0)
+#v1=B.getVelocity()[0]
 #lastX = B.getPosition()[0]
-
-
 
 #for t in range(1,100):
 #    lastX = B.getPosition()[0]
@@ -138,32 +189,53 @@ v1 = B.getVelocity()[0]
 #    print(B.getPosition())
 #    x.append(float(t)*dt)
 #    y.append(B.getPosition()[0])
-#    v1 = (B.getPosition()[0]-lastX)/B.dt
+#    v1=(B.getPosition()[0]-lastX)/B.dt
+#    print(v1)
 #    v.append(v1)
 #    a.append((v1-lastV)/B.dt)
 
-for t in range(1,100):
-    B.integrate(A)
-    x.append(float(t)*dt)
-    y.append(B.getPosition())
+#for t in range(1,100):
+#    B.integrate(A)
+#    x.append(float(t)*dt)
+#    y.append(B.getPosition())
 
 fig = plt.figure()
-ax = fig.add_subplot(111,projection="3d")
 
-for point in y:
-    ax.scatter(point[0],point[1],point[2],marker=m)
-#fig,ax = plt.subplots(3)
+ax = fig.add_subplot(111, projection='3d')
+
+i = 0
+c = ["g","r"]
+for particle in particles:
+    time, trajectory = particle.getTrajectory()
+
+
+    for x,y in zip(time,trajectory):
+        ax.scatter(y[0], y[1], y[2], marker='o',c=c[i])
+    
+    i+=1
+        
+#for point in y:
+#    ax.scatter(point[0], point[1], point[2], marker='o')
+
+#pointA=A.getPosition()
+#ax.scatter(pointA[0], pointA[1], pointA[2], marker='o')
+
+    
+#fig, ax = plt.subplots(3)    
 #ax[0].plot(x,y)
-#ax[0].set(xlabel="time [sec]",ylabel="distance [km]",title="n-body")
+#ax[0].set(xlabel='time [sec]', ylabel='distance [km]',
+#           title="n-body")
 #ax[0].grid()
-
+#
 #ax[1].plot(x,v)
-#ax[1].set(xlabel="time [Sec]", ylabel="distance [km]")
+#ax[1].set(xlabel='time [sec]', ylabel='velocity [km/s]')
 #ax[1].grid()
-
+#
 #ax[2].plot(x,a)
-#ax[2].set(xlabel="time [sec]", ylabel="acceleration [km/s^2]")
+#ax[2].set(xlabel='time [sec]', ylabel='acceleration [km/s^2]')
 #ax[2].grid()
+
+
 
 plt.show()
 
