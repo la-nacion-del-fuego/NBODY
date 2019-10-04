@@ -20,6 +20,7 @@ import math
 import matplotlib
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
+#import  mplt
 
 G=6.674e-11         #m^3kg^-1s^-2
 
@@ -78,7 +79,9 @@ class Particle:
         Vx=(G*B.m*self.dt/(r**3))*u[0]
         Vy=(G*B.m*self.dt/(r**3))*u[1]
         Vz=(G*B.m*self.dt/(r**3))*u[2]
-
+        
+        
+        
         self.v[0] += Vx
         self.v[1] += Vy
         self.v[2] += Vz
@@ -102,7 +105,11 @@ class Particle:
         Vx=(G*B.m*self.dt/(r**3))*u[0]
         Vy=(G*B.m*self.dt/(r**3))*u[1]
         Vz=(G*B.m*self.dt/(r**3))*u[2]
-
+        
+        #print(u)
+        #print(r)
+        #print(G*B.m/(r**3)*u[0],G*B.m/(r**3)*u[1],G*B.m/(r**3)*u[2])
+        
         return [Vx,Vy,Vz]
     
     def updateV(self,v):
@@ -137,28 +144,32 @@ class Potential:
         
         return self.system
                     
+lenTime = 5.0 #Sec
+dt=0.005              #sec
+n_steps = int(lenTime/dt)
 
-p0=[5e-2, 1e-3, 0.0]  #km
-v0=[0.0, 0.0, 0.0]  #km/s
-m=1e7               #kg
+p0=[0.001, 0.0, 0.0]  #m
+v0=[0.0, 0.0, 0.0]  #m/s
+m=1e1         #kg
 
-p1=[0.0, 0.0, 0.0]  #km
-v1=[1.0, 0.0, 0.0]  #km/s
-m1=1e7               #kg
+p1=[0.0, 0.0, 0.0]  #m
+v1=[0.0, 0.0, 1e-3]  #m/s
+m1=1e1               #kg
 
-dt=0.001              #sec
+
 
 A = Particle(p0,v0,m)
 B = Particle(p1,v1,m1)
+C = Particle([0.0,0.001,0.0],[0.0,0.0,0.0],1e1)
 
-particles = [A,B]
+particles = [A,B,C]
 
 twoBody = Potential(particles,dt)
 
 x = []
 y = []
 
-for t in range(1,100):
+for t in range(1,n_steps):
     system = twoBody.integrate(float(t)*dt)
     #twoBody.integrate()
     #x.append(float(t)*dt)
@@ -202,17 +213,26 @@ for t in range(1,100):
 fig = plt.figure()
 
 ax = fig.add_subplot(111, projection='3d')
+#ax. = p3.Axes3D(fig)
+
 
 i = 0
-c = ["g","r"]
+c = ["g","r","b"]
+#lns = []
 for particle in particles:
     time, trajectory = particle.getTrajectory()
 
 
     for x,y in zip(time,trajectory):
         ax.scatter(y[0], y[1], y[2], marker='o',c=c[i])
-    
+        #ln, = ax.plot(y[0], y[1], y[2], marker='o',c=c[i])
+        #lns.append(ln)
     i+=1
+    
+
+#lns = []
+
+
         
 #for point in y:
 #    ax.scatter(point[0], point[1], point[2], marker='o')
